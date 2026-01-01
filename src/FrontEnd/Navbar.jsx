@@ -59,8 +59,25 @@ const Navbar = () => {
     }`;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-12 py-6 bg-black/50 backdrop-blur-md shadow-xl">
-      <div className="flex items-center gap-10 font-semibold text-lg">
+    <nav
+      className="
+        fixed top-0 left-0 right-0 z-50
+        flex justify-between items-center
+        px-4 sm:px-8 lg:px-12
+        py-3 sm:py-4 lg:py-6
+        bg-black/50 backdrop-blur-md shadow-xl
+      "
+    >
+      {/* LEFT LINKS */}
+      <div
+        className="
+          flex flex-wrap items-center
+          justify-center sm:justify-start
+          gap-4 sm:gap-6 lg:gap-10
+          font-semibold
+          text-sm sm:text-base lg:text-lg
+        "
+      >
         {/* Logout / Home */}
         {isLoggedIn ? (
           <button
@@ -79,8 +96,6 @@ const Navbar = () => {
           Home
         </NavLink>
 
-         
-
         {isLoggedIn && user?.role !== "admin" && (
           <NavLink to="/library-card" className={linkClass}>
             Make Library Card
@@ -95,12 +110,13 @@ const Navbar = () => {
           Borrow History
         </NavLink>
 
-        {/* ✅ ADMIN DASHBOARD LINK */}
+        {/* ADMIN LINKS */}
         {user?.role === "admin" && (
           <NavLink to="/admin" className={linkClass}>
             Admin Dashboard
           </NavLink>
         )}
+
         {user?.role === "admin" && (
           <NavLink to="/library-card-pending" className={linkClass}>
             Library Card Pending List
@@ -112,16 +128,23 @@ const Navbar = () => {
         </NavLink>
       </div>
 
-      {/* Right Title + Logo */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-4xl font-extrabold tracking-wider text-white drop-shadow-lg">
+      {/* RIGHT TITLE + LOGO */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <h1
+          className="
+            text-xl sm:text-2xl lg:text-4xl
+            font-extrabold tracking-wider
+            text-white drop-shadow-lg
+            whitespace-nowrap
+          "
+        >
           CUET LIBRARY
         </h1>
 
         <img
           src={cuetLogo}
           alt="CUET Logo"
-          className="h-12 w-auto object-contain drop-shadow-lg"
+          className="h-8 sm:h-10 lg:h-12 w-auto object-contain drop-shadow-lg"
         />
       </div>
     </nav>
