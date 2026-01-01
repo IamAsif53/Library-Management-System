@@ -74,7 +74,8 @@ export default function Books() {
 
   async function fetchBooks() {
     try {
-      const res = await fetch("http://localhost:5000/api/books");
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/books");
       if (!res.ok) throw new Error("Failed to fetch books");
       const data = await res.json();
       setBooks(data);
@@ -93,7 +94,8 @@ export default function Books() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("http://localhost:5000/api/borrows/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -140,7 +142,8 @@ export default function Books() {
   // ============================
   async function handleBorrow(book) {
     try {
-      const res = await fetch(`http://localhost:5000/api/borrows/${book._id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/${book._id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -166,7 +169,8 @@ export default function Books() {
 
   async function handleAddBook() {
     try {
-      const res = await fetch("http://localhost:5000/api/books", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/books", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -208,7 +212,8 @@ export default function Books() {
   // ============================
   async function handleDeleteBook() {
     try {
-      await fetch(`http://localhost:5000/api/books/${deleteBookId}`, {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}
+/api/books/${deleteBookId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -227,7 +232,8 @@ export default function Books() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("http://localhost:5000/api/library-card/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/library-card/my", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -246,7 +252,8 @@ export default function Books() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/borrows/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

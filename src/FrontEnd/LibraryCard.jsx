@@ -38,7 +38,8 @@ export default function LibraryCard() {
 
     try {
       const res = await fetch(
-        "http://localhost:5000/api/library-card/apply",
+        "${import.meta.env.VITE_API_BASE_URL}
+/api/library-card/apply",
         {
           method: "POST",
           headers: {

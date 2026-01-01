@@ -33,7 +33,8 @@ export default function HomePage() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/users/me", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/users/me", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -73,7 +74,8 @@ export default function HomePage() {
       const token = localStorage.getItem("token");
       if (!token) return [];
 
-      const res = await fetch("http://localhost:5000/api/borrows/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -94,7 +96,8 @@ export default function HomePage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("http://localhost:5000/api/library-card/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/library-card/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

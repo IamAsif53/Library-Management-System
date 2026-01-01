@@ -14,7 +14,8 @@ export default function LibraryCardPending() {
   async function fetchPendingCards() {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/library-card/pending",
+        "${import.meta.env.VITE_API_BASE_URL}
+/api/library-card/pending",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -40,7 +41,8 @@ export default function LibraryCardPending() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/library-card/approve/${cardId}`,
+        `${import.meta.env.VITE_API_BASE_URL}
+/api/library-card/approve/${cardId}`,
         {
           method: "POST",
           headers: {

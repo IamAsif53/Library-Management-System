@@ -24,7 +24,8 @@ const Login = ({ setShowSignup, onLogin }) => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -72,7 +73,8 @@ const Login = ({ setShowSignup, onLogin }) => {
         // ===============================
         setFetchingMe(true);
         try {
-          const meRes = await fetch("http://localhost:5000/api/users/me", {
+          const meRes = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/users/me", {
             headers: {
               Authorization: `Bearer ${data.token}`,
               "Content-Type": "application/json",

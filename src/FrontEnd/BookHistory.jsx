@@ -13,7 +13,8 @@ export default function BookHistory() {
 
   async function fetchHistory() {
     try {
-      const res = await fetch("http://localhost:5000/api/borrows/my", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -38,7 +39,8 @@ export default function BookHistory() {
   async function handleReturn(borrowId) {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/borrows/return/${borrowId}`,
+        `${import.meta.env.VITE_API_BASE_URL}
+/api/borrows/return/${borrowId}`,
         {
           method: "POST",
           headers: {

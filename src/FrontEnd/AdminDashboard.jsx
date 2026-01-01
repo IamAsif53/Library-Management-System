@@ -18,7 +18,8 @@ export default function AdminDashboard() {
 
   async function fetchStats() {
     try {
-      const res = await fetch("http://localhost:5000/api/books/admin/stats", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/books/admin/stats", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch admin stats");
@@ -32,7 +33,8 @@ export default function AdminDashboard() {
 
   async function fetchBorrowedBooks() {
     try {
-      const res = await fetch("http://localhost:5000/api/borrows", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
+/api/borrows", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
