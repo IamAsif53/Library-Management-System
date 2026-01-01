@@ -38,8 +38,7 @@ export default function LibraryCard() {
 
     try {
       const res = await fetch(
-        "${import.meta.env.VITE_API_BASE_URL}
-/api/library-card/apply",
+        `${import.meta.env.VITE_API_BASE_URL}/api/library-card/apply`,
         {
           method: "POST",
           headers: {
@@ -119,9 +118,7 @@ export default function LibraryCard() {
           {/* Level & Term */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-200 mb-1">
-                Level
-              </label>
+              <label className="block text-sm text-gray-200 mb-1">Level</label>
               <select
                 name="level"
                 value={form.level}
@@ -137,9 +134,7 @@ export default function LibraryCard() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-200 mb-1">
-                Term
-              </label>
+              <label className="block text-sm text-gray-200 mb-1">Term</label>
               <select
                 name="term"
                 value={form.term}

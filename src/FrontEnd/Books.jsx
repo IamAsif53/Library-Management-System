@@ -74,8 +74,8 @@ export default function Books() {
 
   async function fetchBooks() {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/books");
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/books`);
+
       if (!res.ok) throw new Error("Failed to fetch books");
       const data = await res.json();
       setBooks(data);
@@ -94,12 +94,14 @@ export default function Books() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) return;
 
@@ -142,11 +144,13 @@ export default function Books() {
   // ============================
   async function handleBorrow(book) {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/${book._id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/${bookId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -168,55 +172,60 @@ export default function Books() {
   }
 
   async function handleAddBook() {
-    try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/books", {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/books`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newBook),
-      });
+      }
+    );
 
-      const text = await res.text(); // 👈 read raw response
-
-      let data;
+    if (!res.ok) {
+      let message = "Add book failed";
       try {
-        data = JSON.parse(text);
+        const errData = await res.json();
+        message = errData.message || message;
       } catch {
-        throw new Error("Server did not return JSON. Check backend logs.");
+        // backend didn't return JSON
       }
-
-      if (!res.ok) {
-        throw new Error(data.message || "Add book failed");
-      }
-
-      setBooks((prev) => [...prev, data]);
-      setShowAddBook(false);
-      setNewBook({
-        title: "",
-        author: "",
-        isbn: "",
-        category: "",
-        quantity: 1,
-        available: 1,
-      });
-    } catch (err) {
-      alert(err.message);
+      throw new Error(message);
     }
+
+    const data = await res.json();
+
+    setBooks((prev) => [...prev, data]);
+    setShowAddBook(false);
+    setNewBook({
+      title: "",
+      author: "",
+      isbn: "",
+      category: "",
+      quantity: 1,
+      available: 1,
+    });
+  } catch (err) {
+    alert(err.message);
   }
+}
+
 
   // ============================
   // ADMIN: DELETE BOOK
   // ============================
   async function handleDeleteBook() {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}
-/api/books/${deleteBookId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/books/${deleteBookId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       setBooks((prev) => prev.filter((b) => b._id !== deleteBookId));
     } catch {
@@ -232,10 +241,12 @@ export default function Books() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/library-card/my", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/library-card/my`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!res.ok) return;
 
@@ -248,28 +259,29 @@ export default function Books() {
 
   //borrow limit 4
 
-  async function fetchActiveBorrowsCount() {
-    try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/my", {
+ const fetchActiveBorrowsCount = async () => {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      // count only not returned books
-      const active = data.filter((b) => !b.returnedAt).length;
-      setActiveBorrowCount(active);
-    } catch (err) {
-      console.error("Failed to fetch active borrows:", err);
+    if (!res.ok) {
+      console.error("Failed to fetch active borrows");
+      return;
     }
+
+    const data = await res.json();
+    setActiveBorrowCount(data.length);
+  } catch (err) {
+    console.error("Failed to fetch active borrows:", err);
   }
+};
+
 
   if (loading)
     return (

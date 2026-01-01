@@ -14,8 +14,7 @@ export default function LibraryCardPending() {
   async function fetchPendingCards() {
     try {
       const res = await fetch(
-        "${import.meta.env.VITE_API_BASE_URL}
-/api/library-card/pending",
+        `${import.meta.env.VITE_API_BASE_URL}/api/library-card/pending`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -41,8 +40,7 @@ export default function LibraryCardPending() {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}
-/api/library-card/approve/${cardId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/library-card/approve/${cardId}`,
         {
           method: "POST",
           headers: {
@@ -97,13 +95,10 @@ export default function LibraryCardPending() {
               key={card._id}
               className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl"
             >
-              <h2 className="text-xl font-bold text-white mb-2">
-                {card.name}
-              </h2>
+              <h2 className="text-xl font-bold text-white mb-2">{card.name}</h2>
 
               <p className="text-sm text-gray-300">
-                <span className="font-semibold">Email:</span>{" "}
-                {card.user?.email}
+                <span className="font-semibold">Email:</span> {card.user?.email}
               </p>
 
               <p className="text-sm text-gray-300">

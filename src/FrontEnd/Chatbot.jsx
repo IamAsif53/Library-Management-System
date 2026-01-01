@@ -5,8 +5,7 @@ export default function Chatbot() {
 
   const initialMessage = {
     role: "bot",
-    text:
-      "Hi 👋 I’m your library assistant.",
+    text: "Hi 👋 I’m your library assistant.",
   };
 
   const [messages, setMessages] = useState([initialMessage]);
@@ -44,15 +43,17 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/chatbot", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: msg }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chatbot`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: msg }),
+        }
+      );
 
       const data = await res.json();
 

@@ -33,13 +33,16 @@ export default function HomePage() {
     }
 
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/users/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetch(
+  `${import.meta.env.VITE_API_BASE_URL}/api/users/me`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
 
       if (res.status === 401) {
         // invalid / expired token
@@ -74,12 +77,16 @@ export default function HomePage() {
       const token = localStorage.getItem("token");
       if (!token) return [];
 
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+     const res = await fetch(
+  `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
       if (!res.ok) return [];
 
       const data = await res.json();
@@ -96,12 +103,16 @@ export default function HomePage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/library-card/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+     const res = await fetch(
+  `${import.meta.env.VITE_API_BASE_URL}/api/library-card/my`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
 
       if (!res.ok) return;
 

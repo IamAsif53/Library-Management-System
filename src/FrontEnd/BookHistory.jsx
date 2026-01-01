@@ -13,12 +13,14 @@ export default function BookHistory() {
 
   async function fetchHistory() {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error("Failed to fetch book history");
@@ -39,8 +41,7 @@ export default function BookHistory() {
   async function handleReturn(borrowId) {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}
-/api/borrows/return/${borrowId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/return/${borrowId}`,
         {
           method: "POST",
           headers: {
@@ -93,9 +94,7 @@ export default function BookHistory() {
   // ============================
   const overdueCount = history.filter(
     (item) =>
-      !item.returnedAt &&
-      item.dueAt &&
-      new Date(item.dueAt) < new Date()
+      !item.returnedAt && item.dueAt && new Date(item.dueAt) < new Date()
   ).length;
 
   const totalFine = overdueCount * 10;
@@ -143,9 +142,7 @@ export default function BookHistory() {
                 <div
                   key={item._id}
                   className={`relative bg-slate-900/80 border rounded-2xl p-6 shadow-lg hover:shadow-2xl transition ${
-                    isOverdue
-                      ? "border-red-500/60"
-                      : "border-indigo-500/30"
+                    isOverdue ? "border-red-500/60" : "border-indigo-500/30"
                   }`}
                 >
                   <h3 className="text-2xl font-bold text-white mb-2">
@@ -163,15 +160,13 @@ export default function BookHistory() {
                   </p>
 
                   <p className="mt-3 text-sm text-gray-400">
-                    Borrowed on:{" "}
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    Borrowed on: {new Date(item.createdAt).toLocaleDateString()}
                   </p>
 
                   {/* ✅ DUE DATE */}
                   {item.dueAt && (
                     <p className="text-sm text-gray-300">
-                      Due on:{" "}
-                      {new Date(item.dueAt).toLocaleDateString()}
+                      Due on: {new Date(item.dueAt).toLocaleDateString()}
                     </p>
                   )}
 

@@ -61,12 +61,11 @@ const Signup = ({ setShowSignup }) => {
 
       console.log("Submitting signup payload:", payload);
 
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+});
 
       console.log("Raw response from server:", res.status, res.statusText);
 

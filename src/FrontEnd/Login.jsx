@@ -24,15 +24,17 @@ const Login = ({ setShowSignup, onLogin }) => {
 
     setLoading(true);
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-        }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/users/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.email.trim().toLowerCase(),
+            password: form.password,
+          }),
+        }
+      );
 
       let data;
       try {
@@ -73,13 +75,15 @@ const Login = ({ setShowSignup, onLogin }) => {
         // ===============================
         setFetchingMe(true);
         try {
-          const meRes = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/users/me", {
-            headers: {
-              Authorization: `Bearer ${data.token}`,
-              "Content-Type": "application/json",
-            },
-          });
+          const meRes = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/api/users/me`,
+            {
+              headers: {
+                Authorization: `Bearer ${data.token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
           const meData = await meRes.json();
           const u = meData?.user || meData;

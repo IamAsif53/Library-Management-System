@@ -18,10 +18,15 @@ export default function AdminDashboard() {
 
   async function fetchStats() {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/books/admin/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/books/admin/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (!res.ok) throw new Error("Failed to fetch admin stats");
       setStats(await res.json());
     } catch (err) {
@@ -33,10 +38,15 @@ export default function AdminDashboard() {
 
   async function fetchBorrowedBooks() {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}
-/api/borrows", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+  `${import.meta.env.VITE_API_BASE_URL}/api/borrows`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
       if (!res.ok) return;
       setBorrowedBooks(await res.json());
     } catch (err) {
@@ -64,10 +74,7 @@ export default function AdminDashboard() {
     const regex = new RegExp(`(${searchQuery})`, "gi");
     return text.split(regex).map((part, i) =>
       part.toLowerCase() === searchQuery.toLowerCase() ? (
-        <span
-          key={i}
-          className="bg-yellow-300 text-black px-1 rounded"
-        >
+        <span key={i} className="bg-yellow-300 text-black px-1 rounded">
           {part}
         </span>
       ) : (
@@ -153,20 +160,16 @@ export default function AdminDashboard() {
                   </p>
 
                   <p className="text-xs text-gray-600">
-                    Borrowed by:{" "}
-                    {highlight(item.user?.email || "Unknown User")}
+                    Borrowed by: {highlight(item.user?.email || "Unknown User")}
                   </p>
 
                   <p className="text-xs text-gray-500">
-                    Borrowed on:{" "}
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    Borrowed on: {new Date(item.createdAt).toLocaleDateString()}
                   </p>
 
                   <p
                     className={`text-xs font-bold uppercase tracking-wide ${
-                      item.returnedAt
-                        ? "text-emerald-600"
-                        : "text-rose-600"
+                      item.returnedAt ? "text-emerald-600" : "text-rose-600"
                     }`}
                   >
                     Status: {item.returnedAt ? "Returned" : "Borrowed"}
