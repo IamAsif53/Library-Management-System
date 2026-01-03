@@ -13,7 +13,7 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
   try {
     // 🔒 LIMIT CHECK: max 4 active borrows
     const activeBorrowsCount = await Borrow.countDocuments({
-      user: req.user.id,
+      user: req.user._id, // ✅ FIXED
       returnedAt: null,
     });
 
@@ -24,14 +24,6 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
     }
 
     const book = await Book.findById(req.params.bookId);
-    const card = await LibraryCard.findOne({ user: req.user.id });
-
-    if (!card || card.cardStatus !== "approved") {
-      return res.status(403).json({
-        message: "Approved library card required to borrow books",
-      });
-    }
-
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
     }
@@ -40,6 +32,15 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Book not available" });
     }
 
+    // 🔐 CHECK APPROVED LIBRARY CARD
+    const card = await LibraryCard.findOne({ user: req.user._id }); // ✅ FIXED
+    if (!card || card.cardStatus !== "approved") {
+      return res.status(403).json({
+        message: "Approved library card required to borrow books",
+      });
+    }
+
+    // 🔽 UPDATE BOOK AVAILABILITY
     book.available -= 1;
     await book.save();
 
@@ -47,8 +48,9 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
     const dueAt = new Date(borrowedAt);
     dueAt.setDate(dueAt.getDate() + 30);
 
+    // 📘 CREATE BORROW RECORD
     await Borrow.create({
-      user: req.user.id,
+      user: req.user._id, // ✅ FIXED
       book: book._id,
       borrowedAt,
       dueAt,
@@ -56,6 +58,7 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
 
     res.json({ message: "Book borrowed successfully" });
   } catch (err) {
+    console.error("Borrow error:", err);
     res.status(500).json({
       message: "Borrow failed",
       error: err.message,
@@ -68,7 +71,7 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
    ============================ */
 router.get("/my", authMiddleware, async (req, res) => {
   try {
-    const history = await Borrow.find({ user: req.user.id })
+    const history = await Borrow.find({ user: req.user._id }) // ✅ FIXED
       .populate("book", "title author isbn")
       .sort({ createdAt: -1 });
 
@@ -76,6 +79,25 @@ router.get("/my", authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Failed to fetch history",
+      error: err.message,
+    });
+  }
+});
+
+/* ============================
+   GET ACTIVE BORROW COUNT (USER)
+   ============================ */
+router.get("/my/count", authMiddleware, async (req, res) => {
+  try {
+    const count = await Borrow.countDocuments({
+      user: req.user._id, // ✅ FIXED
+      returnedAt: null,
+    });
+
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch borrow count",
       error: err.message,
     });
   }
@@ -115,7 +137,8 @@ router.post("/return/:borrowId", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Book already returned" });
     }
 
-    if (borrow.user.toString() !== req.user.id) {
+    // 🔐 OWNERSHIP CHECK
+    if (borrow.user.toString() !== req.user._id.toString()) { // ✅ FIXED
       return res.status(403).json({ message: "Unauthorized action" });
     }
 
@@ -133,16 +156,5 @@ router.post("/return/:borrowId", authMiddleware, async (req, res) => {
     });
   }
 });
-
-// GET active borrow count (USER)
-router.get("/my/count", authMiddleware, async (req, res) => {
-  const count = await Borrow.countDocuments({
-    user: req.user._id,
-    returnedAt: null,
-  });
-
-  res.json({ count });
-});
-
 
 module.exports = router;
