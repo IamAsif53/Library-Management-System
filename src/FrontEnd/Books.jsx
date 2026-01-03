@@ -162,6 +162,8 @@ export default function Books() {
           b._id === book._id ? { ...b, available: b.available - 1 } : b
         )
       );
+        // ✅ IMMEDIATE UI UPDATE
+    setActiveBorrowCount((prev) => prev + 1);
 
       setMessage("✅ You have borrowed the book successfully");
     } catch (err) {
