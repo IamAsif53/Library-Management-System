@@ -145,7 +145,7 @@ export default function Books() {
   async function handleBorrow(book) {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/${bookId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/${book._id}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -153,8 +153,10 @@ export default function Books() {
       );
 
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.message);
 
+      // update UI
       setBooks((prev) =>
         prev.map((b) =>
           b._id === book._id ? { ...b, available: b.available - 1 } : b
@@ -162,8 +164,8 @@ export default function Books() {
       );
 
       setMessage("✅ You have borrowed the book successfully");
-    } catch {
-      setMessage("❌ Borrow failed");
+    } catch (err) {
+      setMessage(err.message || "❌ Borrow failed");
     } finally {
       setShowConfirm(false);
       setSelectedBook(null);
@@ -172,47 +174,46 @@ export default function Books() {
   }
 
   async function handleAddBook() {
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/books`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newBook),
-      }
-    );
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/books`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newBook),
+        }
+      );
 
-    if (!res.ok) {
-      let message = "Add book failed";
-      try {
-        const errData = await res.json();
-        message = errData.message || message;
-      } catch {
-        // backend didn't return JSON
+      if (!res.ok) {
+        let message = "Add book failed";
+        try {
+          const errData = await res.json();
+          message = errData.message || message;
+        } catch {
+          // backend didn't return JSON
+        }
+        throw new Error(message);
       }
-      throw new Error(message);
+
+      const data = await res.json();
+
+      setBooks((prev) => [...prev, data]);
+      setShowAddBook(false);
+      setNewBook({
+        title: "",
+        author: "",
+        isbn: "",
+        category: "",
+        quantity: 1,
+        available: 1,
+      });
+    } catch (err) {
+      alert(err.message);
     }
-
-    const data = await res.json();
-
-    setBooks((prev) => [...prev, data]);
-    setShowAddBook(false);
-    setNewBook({
-      title: "",
-      author: "",
-      isbn: "",
-      category: "",
-      quantity: 1,
-      available: 1,
-    });
-  } catch (err) {
-    alert(err.message);
   }
-}
-
 
   // ============================
   // ADMIN: DELETE BOOK
@@ -259,28 +260,26 @@ export default function Books() {
 
   //borrow limit 4
 
- async function fetchActiveBorrowsCount() {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+  async function fetchActiveBorrowsCount() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my/count`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my/count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    if (!res.ok) return;
+      if (!res.ok) return;
 
-    const data = await res.json();
-    setActiveBorrowCount(data.count);
-  } catch (err) {
-    console.error("Failed to fetch active borrow count", err);
+      const data = await res.json();
+      setActiveBorrowCount(data.count);
+    } catch (err) {
+      console.error("Failed to fetch active borrow count", err);
+    }
   }
-}
-
-
 
   if (loading)
     return (
