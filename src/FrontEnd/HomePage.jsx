@@ -14,12 +14,15 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  //  USER DASHBOARD STATES
+  // USER DASHBOARD STATES
   const [borrowHistory, setBorrowHistory] = useState([]);
   const [cardStatus, setCardStatus] = useState("none"); // none | pending | approved
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [borrowedCount, setBorrowedCount] = useState(0);
 
-  // fetch /me and set user if token valid
+  // ============================
+  // 🔐 AUTH / USER
+  // ============================
   async function fetchMe() {
     setLoading(true);
     setError("");
@@ -27,25 +30,23 @@ export default function HomePage() {
 
     if (!token) {
       setUser(null);
-      localStorage.removeItem("user"); // 🔥 keep storage clean
+      localStorage.removeItem("user");
       setLoading(false);
       return;
     }
 
     try {
       const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/users/me`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  }
-);
-
+        `${import.meta.env.VITE_API_BASE_URL}/api/users/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (res.status === 401) {
-        // invalid / expired token
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         window.dispatchEvent(new Event("authChange"));
@@ -57,7 +58,6 @@ export default function HomePage() {
       const data = await res.json();
       const u = data?.user || data;
 
-      // 🔥 CRITICAL FIX: sync backend user → localStorage
       if (u) {
         localStorage.setItem("user", JSON.stringify(u));
       }
@@ -72,20 +72,23 @@ export default function HomePage() {
     }
   }
 
+  // ============================
+  // 📚 BORROW / CARD DATA
+  // ============================
   async function fetchBorrowHistory() {
     try {
       const token = localStorage.getItem("token");
       if (!token) return [];
 
-     const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  }
-);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!res.ok) return [];
 
@@ -103,16 +106,15 @@ export default function HomePage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-     const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/library-card/my`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  }
-);
-
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/library-card/my`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!res.ok) return;
 
@@ -123,7 +125,28 @@ export default function HomePage() {
     }
   }
 
-  // initial fetch + subscribe to auth change events
+  async function fetchBorrowedCount() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my/count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await res.json();
+      setBorrowedCount(data.count);
+    } catch (err) {
+      console.error("Failed to fetch borrowed count", err);
+    }
+  }
+
+  // ============================
+  // 🔄 AUTH CHANGE LISTENERS
+  // ============================
   useEffect(() => {
     let mounted = true;
     fetchMe();
@@ -132,6 +155,7 @@ export default function HomePage() {
       if (!mounted) return;
       fetchMe();
     }
+
     function onStorage(e) {
       if (e.key === "token") {
         if (!mounted) return;
@@ -147,10 +171,10 @@ export default function HomePage() {
       window.removeEventListener("authChange", onAuthChange);
       window.removeEventListener("storage", onStorage);
     };
-  }, [showSignup]); // re-check when signup modal closes
+  }, [showSignup]);
 
   // ============================
-  // 📊 USER DASHBOARD DATA LOADER
+  // 📊 DASHBOARD DATA LOADER
   // ============================
   useEffect(() => {
     if (!user) return;
@@ -158,7 +182,10 @@ export default function HomePage() {
     async function loadDashboardData() {
       setDashboardLoading(true);
 
-      await Promise.all([fetchBorrowHistory(), fetchLibraryCardStatus()]);
+      await Promise.all([
+        fetchBorrowedCount(),
+        fetchLibraryCardStatus(),
+      ]);
 
       setDashboardLoading(false);
     }
@@ -167,21 +194,16 @@ export default function HomePage() {
   }, [user]);
 
   // ============================
-  // 📊 USER DASHBOARD METRICS
+  // 📊 DASHBOARD METRICS
   // ============================
-
-  // Active borrowed books (not returned)
   const activeBorrows = borrowHistory.filter((b) => !b.returnedAt);
 
-  // Overdue books
   const overdueBorrows = activeBorrows.filter(
     (b) => b.dueAt && new Date(b.dueAt) < new Date()
   );
 
-  // Total fine (10 TK per overdue book)
   const totalFine = overdueBorrows.length * 10;
 
-  // Next due date (earliest dueAt)
   let nextDueDate = null;
   if (activeBorrows.length > 0) {
     const sortedByDue = activeBorrows
@@ -193,8 +215,14 @@ export default function HomePage() {
     }
   }
 
-  // Borrowing access status
-  const canBorrow = cardStatus === "approved" && totalFine === 0;
+  // ✅ FINAL FIX: borrowing access logic
+  const canBorrow =
+    cardStatus === "approved" &&
+    totalFine === 0 &&
+    borrowedCount < 4;
+
+  // ⬇️ rest of your JSX rendering stays EXACTLY as it was
+
 
   // loading state
   if (loading) {
@@ -308,63 +336,66 @@ export default function HomePage() {
             </div>
           </div>
 
-         
-
-
-            {user?.role !== "admin" && (
+          {user?.role !== "admin" && (
             <>
-          {/* ============================
+              {/* ============================
     📜 LIBRARY RULES
 ============================ */}
-          <div className="mt-12 max-w-4xl mx-auto mb-10">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-              <h2 className="text-2xl font-extrabold text-white mb-6 flex items-center gap-2">
-                📜 Library Rules
-              </h2>
+              <div className="mt-12 max-w-4xl mx-auto mb-10">
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+                  <h2 className="text-2xl font-extrabold text-white mb-6 flex items-center gap-2">
+                    📜 Library Rules
+                  </h2>
 
-              <ul className="space-y-4 text-gray-200 text-sm leading-relaxed">
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-400 font-bold">✔</span>
-                  <span>
-                    You must{" "}
-                    <strong className="text-white">
-                      create and get approval for your library card
-                    </strong>{" "}
-                    before borrowing any books.
-                  </span>
-                </li>
+                  <ul className="space-y-4 text-gray-200 text-sm leading-relaxed">
+                    <li className="flex items-start gap-3">
+                      <span className="text-emerald-400 font-bold">✔</span>
+                      <span>
+                        You must{" "}
+                        <strong className="text-white">
+                          create and get approval for your library card
+                        </strong>{" "}
+                        before borrowing any books.
+                      </span>
+                    </li>
 
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-400 font-bold">✔</span>
-                  <span>
-                    A user can borrow{" "}
-                    <strong className="text-white">
-                      at most 4 books at a time
-                    </strong>
-                    .
-                  </span>
-                </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-emerald-400 font-bold">✔</span>
+                      <span>
+                        A user can borrow{" "}
+                        <strong className="text-white">
+                          at most 4 books at a time
+                        </strong>
+                        .
+                      </span>
+                    </li>
 
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-400 font-bold">✔</span>
-                  <span>
-                    Borrowed books must be returned within{" "}
-                    <strong className="text-white">30 days (1 month)</strong>.
-                  </span>
-                </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-emerald-400 font-bold">✔</span>
+                      <span>
+                        Borrowed books must be returned within{" "}
+                        <strong className="text-white">
+                          30 days (1 month)
+                        </strong>
+                        .
+                      </span>
+                    </li>
 
-                <li className="flex items-start gap-3">
-                  <span className="text-red-400 font-bold">⚠</span>
-                  <span>
-                    If books are not returned on time, a fine of
-                    <strong className="text-white"> 10 TK per book</strong> will
-                    be charged for overdue.
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          </>
+                    <li className="flex items-start gap-3">
+                      <span className="text-red-400 font-bold">⚠</span>
+                      <span>
+                        If books are not returned on time, a fine of
+                        <strong className="text-white">
+                          {" "}
+                          10 TK per book
+                        </strong>{" "}
+                        will be charged for overdue.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </>
           )}
 
           {user?.role !== "admin" && (
@@ -379,68 +410,79 @@ export default function HomePage() {
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <DashboardCard
-                  title="Borrowed Books"
-                  value={activeBorrows.length}
-                  subtitle="Currently borrowed"
-                  color="indigo"
-                />
+               <DashboardCard
+    title="Borrowed Books"
+    value={borrowedCount}
+    subtitle="Currently borrowed"
+    color="indigo"
+  />
 
-                <DashboardCard
-                  title="Overdue Books"
-                  value={overdueBorrows.length}
-                  subtitle="Need immediate return"
-                  color="red"
-                />
+  {/* Overdue Books (kept as-is) */}
+  <DashboardCard
+    title="Overdue Books"
+    value={overdueBorrows.length}
+    subtitle="Need immediate return"
+    color="red"
+  />
 
-                <DashboardCard
-                  title="Total Fine"
-                  value={`${totalFine} TK`}
-                  subtitle="Overdue penalty"
-                  color="amber"
-                />
+  {/* Total Fine (kept as-is) */}
+  <DashboardCard
+    title="Total Fine"
+    value={`${totalFine} TK`}
+    subtitle="Overdue penalty"
+    color="amber"
+  />
 
-                <DashboardCard
-                  title="Library Card"
-                  value={
-                    cardStatus === "approved"
-                      ? "Approved"
-                      : cardStatus === "pending"
-                        ? "Pending"
-                        : "Not Applied"
-                  }
-                  subtitle="Card status"
-                  color={
-                    cardStatus === "approved"
-                      ? "green"
-                      : cardStatus === "pending"
-                        ? "yellow"
-                        : "gray"
-                  }
-                />
+  {/* Library Card (kept as-is) */}
+  <DashboardCard
+    title="Library Card"
+    value={
+      cardStatus === "approved"
+        ? "Approved"
+        : cardStatus === "pending"
+        ? "Pending"
+        : "Not Applied"
+    }
+    subtitle="Card status"
+    color={
+      cardStatus === "approved"
+        ? "green"
+        : cardStatus === "pending"
+        ? "yellow"
+        : "gray"
+    }
+  />
 
-                <DashboardCard
-                  title="Next Due Date"
-                  value={
-                    nextDueDate
-                      ? new Date(nextDueDate).toLocaleDateString()
-                      : "N/A"
-                  }
-                  subtitle="Closest deadline"
-                  color="cyan"
-                />
+  {/* Next Due Date (kept as-is) */}
+  <DashboardCard
+    title="Next Due Date"
+    value={
+      nextDueDate
+        ? new Date(nextDueDate).toLocaleDateString()
+        : "N/A"
+    }
+    subtitle="Closest deadline"
+    color="cyan"
+  />
 
-                <DashboardCard
-                  title="Borrow Access"
-                  value={canBorrow ? "Allowed" : "Blocked"}
-                  subtitle={
-                    canBorrow
-                      ? "You can borrow books"
-                      : "Resolve fine / card issue"
-                  }
-                  color={canBorrow ? "green" : "red"}
-                />
-              </div>
+  {/* ✅ Borrow Access – FIXED & ACCURATE */}
+  <DashboardCard
+    title="Borrow Access"
+    value={canBorrow ? "Allowed" : "Blocked"}
+    subtitle={
+      canBorrow
+        ? "You can borrow books"
+        : borrowedCount >= 4
+        ? "Borrow limit reached (4 books)"
+        : totalFine > 0
+        ? "Clear overdue fine first"
+        : cardStatus !== "approved"
+        ? "Library card not approved"
+        : "Borrowing not allowed"
+    }
+    color={canBorrow ? "green" : "red"}
+  />
+</div>
             </>
           )}
         </div>

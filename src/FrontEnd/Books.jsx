@@ -259,28 +259,27 @@ export default function Books() {
 
   //borrow limit 4
 
- const fetchActiveBorrowsCount = async () => {
+ async function fetchActiveBorrowsCount() {
   try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
+      `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my/count`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       }
     );
 
-    if (!res.ok) {
-      console.error("Failed to fetch active borrows");
-      return;
-    }
+    if (!res.ok) return;
 
     const data = await res.json();
-    setActiveBorrowCount(data.length);
+    setActiveBorrowCount(data.count);
   } catch (err) {
-    console.error("Failed to fetch active borrows:", err);
+    console.error("Failed to fetch active borrow count", err);
   }
-};
+}
+
 
 
   if (loading)

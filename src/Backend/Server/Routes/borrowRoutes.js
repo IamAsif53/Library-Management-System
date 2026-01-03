@@ -134,4 +134,15 @@ router.post("/return/:borrowId", authMiddleware, async (req, res) => {
   }
 });
 
+// GET active borrow count (USER)
+router.get("/my/count", authMiddleware, async (req, res) => {
+  const count = await Borrow.countDocuments({
+    user: req.user._id,
+    returnedAt: null,
+  });
+
+  res.json({ count });
+});
+
+
 module.exports = router;
