@@ -1,9 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../Models/User");
 
-/* ============================
-   AUTH MIDDLEWARE
-   ============================ */
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -14,27 +12,24 @@ function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { id, role }
+
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user;   // ✅ ALWAYS FULL USER OBJECT
     next();
   } catch {
     return res.status(401).json({ message: "Invalid token" });
   }
 }
 
-/* ============================
-   ADMIN CHECK
-   ============================ */
 function isAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
+  if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Admin access only" });
   }
   next();
 }
 
-/* ============================
-   ✅ EXPORT BOTH (CRITICAL)
-   ============================ */
-module.exports = {
-  authMiddleware,
-  isAdmin,
-};
+module.exports = { authMiddleware, isAdmin };
