@@ -163,9 +163,7 @@ export default function LibraryCard() {
               <option value="nagad">Nagad (Demo)</option>
               <option value="card">Card (Demo)</option>
             </select>
-            <p className="text-xs text-gray-400 mt-1">
-              * This is a demo payment for project purposes
-            </p>
+           
           </div>
 
           {/* Messages */}
