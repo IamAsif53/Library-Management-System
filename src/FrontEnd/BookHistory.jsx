@@ -16,15 +16,11 @@ export default function BookHistory() {
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/api/borrows/my`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch book history");
-      }
+      if (!res.ok) throw new Error("Failed to fetch book history");
 
       const data = await res.json();
       setHistory(data);
@@ -32,6 +28,35 @@ export default function BookHistory() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ============================
+  // 💳 PAY FINE HANDLER
+  // ============================
+  async function handlePayFine(borrowId) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/pay-fine/${borrowId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      // ✅ update UI instantly
+      setHistory((prev) =>
+        prev.map((item) =>
+          item._id === borrowId
+            ? { ...item, finePaid: true, fineAmount: 0 }
+            : item
+        )
+      );
+    } catch (err) {
+      alert(err.message);
     }
   }
 
@@ -44,19 +69,13 @@ export default function BookHistory() {
         `${import.meta.env.VITE_API_BASE_URL}/api/borrows/return/${borrowId}`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Return failed");
 
-      if (!res.ok) {
-        throw new Error(data.message || "Return failed");
-      }
-
-      // ✅ Update UI instantly
       setHistory((prev) =>
         prev.map((item) =>
           item._id === borrowId
@@ -90,28 +109,25 @@ export default function BookHistory() {
   }
 
   // ============================
-  // 💰 FINE CALCULATION
+  // 💰 FINE SUMMARY
   // ============================
-  const overdueCount = history.filter(
-    (item) =>
-      !item.returnedAt && item.dueAt && new Date(item.dueAt) < new Date()
-  ).length;
+  const unpaidOverdues = history.filter(
+    (item) => item.fineAmount > 0 && !item.finePaid
+  );
 
-  const totalFine = overdueCount * 10;
+  const totalFine = unpaidOverdues.length * 10;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 py-12 px-6">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <h2 className="text-5xl font-extrabold text-center mb-6 bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
           📚 Your Book History
         </h2>
 
-        {/* 💰 FINE SUMMARY */}
         {totalFine > 0 && (
           <div className="mb-8 p-4 rounded-xl bg-red-500/20 border border-red-400/40 text-center">
             <p className="text-lg font-bold text-red-300">
-              ⚠️ Overdue Books: {overdueCount}
+              ⚠️ Overdue Books: {unpaidOverdues.length}
             </p>
             <p className="text-xl font-extrabold text-red-400 mt-1">
               Total Fine: {totalFine} TK
@@ -122,7 +138,6 @@ export default function BookHistory() {
           </div>
         )}
 
-        {/* Empty State */}
         {history.length === 0 ? (
           <p className="text-center text-indigo-200 text-lg italic">
             You haven’t borrowed any books yet.
@@ -130,18 +145,18 @@ export default function BookHistory() {
         ) : (
           <div className="space-y-6">
             {history.map((item) => {
-              // ============================
-              // ✅ OVERDUE LOGIC
-              // ============================
               const isOverdue =
                 !item.returnedAt &&
                 item.dueAt &&
                 new Date(item.dueAt) < new Date();
 
+              const hasUnpaidFine =
+                item.fineAmount > 0 && !item.finePaid;
+
               return (
                 <div
                   key={item._id}
-                  className={`relative bg-slate-900/80 border rounded-2xl p-6 shadow-lg hover:shadow-2xl transition ${
+                  className={`bg-slate-900/80 border rounded-2xl p-6 shadow-lg ${
                     isOverdue ? "border-red-500/60" : "border-indigo-500/30"
                   }`}
                 >
@@ -150,27 +165,22 @@ export default function BookHistory() {
                   </h3>
 
                   <p className="text-indigo-300">
-                    <span className="font-semibold">Author:</span>{" "}
-                    {item.book.author}
+                    Author: {item.book.author}
                   </p>
 
                   <p className="text-indigo-300 text-sm">
-                    <span className="font-semibold">ISBN:</span>{" "}
-                    {item.book.isbn}
+                    ISBN: {item.book.isbn}
                   </p>
 
                   <p className="mt-3 text-sm text-gray-400">
-                    Borrowed on: {new Date(item.createdAt).toLocaleDateString()}
+                    Borrowed on:{" "}
+                    {new Date(item.createdAt).toLocaleDateString()}
                   </p>
 
-                  {/* ✅ DUE DATE */}
-                  {item.dueAt && (
-                    <p className="text-sm text-gray-300">
-                      Due on: {new Date(item.dueAt).toLocaleDateString()}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-300">
+                    Due on: {new Date(item.dueAt).toLocaleDateString()}
+                  </p>
 
-                  {/* ⚠️ OVERDUE WARNING */}
                   {isOverdue && (
                     <p className="mt-2 text-sm font-bold text-red-400">
                       ⚠️ Overdue
@@ -178,13 +188,19 @@ export default function BookHistory() {
                   )}
 
                   {/* ============================
-                      RETURN STATUS / BUTTON
+                      ACTIONS
                      ============================ */}
                   {item.returnedAt ? (
                     <p className="mt-3 text-sm text-green-400 font-semibold">
-                      ✅ Returned on{" "}
-                      {new Date(item.returnedAt).toLocaleDateString()}
+                      ✅ Returned
                     </p>
+                  ) : hasUnpaidFine ? (
+                    <button
+                      onClick={() => handlePayFine(item._id)}
+                      className="mt-4 px-4 py-2 rounded-lg bg-red-500 text-white font-bold hover:bg-red-600"
+                    >
+                      Pay Fine (10 TK)
+                    </button>
                   ) : (
                     <button
                       onClick={() => handleReturn(item._id)}

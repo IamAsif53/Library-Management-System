@@ -24,6 +24,14 @@ const borrowSchema = new mongoose.Schema(
       type: Date,
       default: null, // null = not returned yet
     },
+     fineAmount: {
+    type: Number,
+    default: 0,
+  },
+  finePaid: {
+    type: Boolean,
+    default: false,
+  },
   },
   { timestamps: true }
 );
