@@ -183,6 +183,8 @@ export default function BookHistory() {
     }
   }
 
+  const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 py-12 px-6">
       <div className="max-w-5xl mx-auto">
@@ -211,17 +213,13 @@ export default function BookHistory() {
         ) : (
           <div className="space-y-6">
             {history.map((item) => {
-              const isOverdue =
-                !item.returnedAt &&
-                item.dueAt &&
-                new Date(item.dueAt) < new Date();
-
+              const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
 
               return (
                 <div
                   key={item._id}
                   className={`bg-slate-900/80 border rounded-2xl p-6 shadow-lg ${
-                    isOverdue ? "border-red-500/60" : "border-indigo-500/30"
+                    hasUnpaidFine ? "border-red-500/60" : "border-indigo-500/30"
                   }`}
                 >
                   <h3 className="text-2xl font-bold text-white mb-2">
@@ -248,9 +246,7 @@ export default function BookHistory() {
                     </p>
                   )}
 
-                  {/* ============================
-        STATUS (FIXED)
-    ============================ */}
+                  {/* STATUS */}
                   {(() => {
                     const status = getStatusLabel(item);
                     return (
@@ -260,9 +256,14 @@ export default function BookHistory() {
                     );
                   })()}
 
-                  {/* ============================
-        TOKENS
-    ============================ */}
+                  {/* OVERDUE + FINE */}
+                  {hasUnpaidFine && (
+                    <p className="mt-2 text-sm font-bold text-red-400">
+                      ⚠️ Overdue — Fine: {item.fineAmount} TK
+                    </p>
+                  )}
+
+                  {/* TOKENS */}
                   {item.status === "borrow_requested" && (
                     <p className="mt-1 text-sm text-yellow-300">
                       Borrow Token: <strong>{item.borrowToken}</strong>
@@ -275,10 +276,17 @@ export default function BookHistory() {
                     </p>
                   )}
 
-                  {/* ============================
-        ACTIONS
-    ============================ */}
-                  {item.status === "borrow_approved" && (
+                  {/* ACTIONS */}
+                  {hasUnpaidFine && (
+                    <button
+                      onClick={() => handlePayFine(item._id)}
+                      className="mt-4 px-4 py-2 rounded-lg bg-red-500 text-white font-bold hover:bg-red-600"
+                    >
+                      Pay Fine (10 TK)
+                    </button>
+                  )}
+
+                  {item.status === "borrow_approved" && !hasUnpaidFine && (
                     <button
                       onClick={() => handleReturnRequest(item._id)}
                       className="mt-4 px-4 py-2 rounded-lg bg-amber-400 text-black font-bold hover:bg-amber-500"

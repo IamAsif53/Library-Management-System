@@ -165,7 +165,7 @@ export default function Books() {
         // ✅ IMMEDIATE UI UPDATE
     setActiveBorrowCount((prev) => prev + 1);
 
-      setMessage("✅ You have borrowed the book successfully");
+      setMessage("✅ Your Borrow Request is successful");
     } catch (err) {
       setMessage(err.message || "❌ Borrow failed");
     } finally {
