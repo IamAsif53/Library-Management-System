@@ -216,7 +216,6 @@ export default function BookHistory() {
                 item.dueAt &&
                 new Date(item.dueAt) < new Date();
 
-              const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
 
               return (
                 <div
@@ -249,12 +248,21 @@ export default function BookHistory() {
                     </p>
                   )}
 
-                  {/* Status */}
-                  <p className={`mt-2 font-bold ${status.color}`}>
-                    Status: {status.text}
-                  </p>
+                  {/* ============================
+        STATUS (FIXED)
+    ============================ */}
+                  {(() => {
+                    const status = getStatusLabel(item);
+                    return (
+                      <p className={`mt-2 font-bold ${status.color}`}>
+                        Status: {status.text}
+                      </p>
+                    );
+                  })()}
 
-                  {/* Tokens */}
+                  {/* ============================
+        TOKENS
+    ============================ */}
                   {item.status === "borrow_requested" && (
                     <p className="mt-1 text-sm text-yellow-300">
                       Borrow Token: <strong>{item.borrowToken}</strong>
@@ -267,7 +275,9 @@ export default function BookHistory() {
                     </p>
                   )}
 
-                  {/* Actions */}
+                  {/* ============================
+        ACTIONS
+    ============================ */}
                   {item.status === "borrow_approved" && (
                     <button
                       onClick={() => handleReturnRequest(item._id)}
