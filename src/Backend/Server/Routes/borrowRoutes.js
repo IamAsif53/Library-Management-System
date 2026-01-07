@@ -148,7 +148,14 @@ router.get("/my/count", authMiddleware, async (req, res) => {
   try {
     const count = await Borrow.countDocuments({
       user: req.user._id,
-      returnedAt: null,
+      $or: [
+        { status: "borrow_approved" }, // ✅ new system
+        {
+          borrowedAt: { $ne: null },
+          returnedAt: null,
+          status: { $exists: false }, // ✅ old records
+        },
+      ],
     });
 
     res.json({ count });
@@ -406,7 +413,6 @@ router.get(
   }
 );
 
-
 /* ============================
    ADMIN: CONFIRM RETURN
    ============================ */
@@ -416,7 +422,9 @@ router.post(
   isAdmin,
   async (req, res) => {
     try {
-      const borrow = await Borrow.findById(req.params.borrowId).populate("book");
+      const borrow = await Borrow.findById(req.params.borrowId).populate(
+        "book"
+      );
 
       if (!borrow) {
         return res.status(404).json({
@@ -451,6 +459,5 @@ router.post(
     }
   }
 );
-
 
 module.exports = router;
