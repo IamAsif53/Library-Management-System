@@ -183,7 +183,6 @@ export default function BookHistory() {
     }
   }
 
-  const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 py-12 px-6">
