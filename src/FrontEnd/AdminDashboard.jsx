@@ -131,23 +131,26 @@ export default function AdminDashboard() {
   }
 
   async function handlePayFine(borrowId) {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/pay-fine/${borrowId}`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/borrows/pay-fine/${borrowId}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
-      if (!res.ok) throw new Error("Failed to pay fine");
+    if (!res.ok) throw new Error("Failed to pay fine");
 
-      // refresh history
-      fetchHistory();
-    } catch (err) {
-      alert(err.message);
-    }
+    // refresh history
+    fetchHistory();
+  } catch (err) {
+    alert(err.message);
   }
+}
+
+
+  
 
   // ============================
   // 🔍 FILTER LOGIC
@@ -194,7 +197,6 @@ export default function AdminDashboard() {
     );
   }
 
-  const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 p-10">
