@@ -1,21 +1,25 @@
-<<<<<<< HEAD
-# React + Vite
+# Library Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An advanced, secure Library Management System built using the MERN stack.
+The system includes user authentication, admin control, book management,
+library card approval, borrowing system, and an AI-powered chatbot using OpenAI.
 
-Currently, two official plugins are available:
+## Features
+- User & Admin authentication (JWT)
+- Book management system
+- Library card application & approval
+- Borrow & return books
+- Admin dashboard
+- AI-powered library chatbot
+- Secure backend with MongoDB
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Technologies Used
+- React (Vite)
+- Node.js & Express
+- MongoDB Atlas
+- OpenAI API
+- JWT Authentication
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-=======
-# Library-Management-System
-An advanced ,secured library management system which contains AI chatbot feature with all other necessary features.
->>>>>>> 97ba8fefc007d8bd1927b6b4aba0bd6a834d4657
+## Project Purpose
+This project was developed as an academic Library Management System
+to demonstrate full-stack development and AI integration.

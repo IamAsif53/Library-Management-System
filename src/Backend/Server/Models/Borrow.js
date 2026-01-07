@@ -7,31 +7,80 @@ const borrowSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     book: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Books",
       required: true,
     },
-    borrowedAt: {
-      type: Date,
-      default: Date.now,
+
+    // =========================
+    // STATUS FLOW
+    // =========================
+    status: {
+      type: String,
+      enum: [
+        "borrow_requested",
+        "borrow_approved",
+        "return_requested",
+        "returned",
+      ],
+      default: "borrow_requested",
     },
-    dueAt: {
-      type: Date,
+
+    // =========================
+    // TOKENS (OFFLINE VERIFICATION)
+    // =========================
+    borrowToken: {
+      type: String,
       required: true,
     },
+
+    returnToken: {
+      type: String,
+      default: null,
+    },
+
+    // =========================
+    // DATES
+    // =========================
+    borrowedAt: {
+      type: Date,
+      default: null, // set ONLY after admin approval
+    },
+
+    dueAt: {
+      type: Date,
+      default: null,
+    },
+
     returnedAt: {
       type: Date,
-      default: null, // null = not returned yet
+      default: null,
     },
-     fineAmount: {
-    type: Number,
-    default: 0,
-  },
-  finePaid: {
-    type: Boolean,
-    default: false,
-  },
+
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+
+    returnApprovedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // =========================
+    // FINE SYSTEM (UNCHANGED)
+    // =========================
+    fineAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    finePaid: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

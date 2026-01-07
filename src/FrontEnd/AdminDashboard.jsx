@@ -6,6 +6,9 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [borrowedBooks, setBorrowedBooks] = useState([]);
 
+  const [borrowRequests, setBorrowRequests] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
+
   // 🔍 search state
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -14,7 +17,50 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats();
     fetchBorrowedBooks();
+    fetchBorrowRequests();
+    fetchReturnRequests();
   }, []);
+
+  async function approveBorrow(borrowId) {
+    if (!window.confirm("Approve this borrow request?")) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/admin/approve/${borrowId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Approval failed");
+
+      // remove from UI
+      setBorrowRequests((prev) => prev.filter((b) => b._id !== borrowId));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function confirmReturn(borrowId) {
+    if (!window.confirm("Confirm this return?")) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/admin/confirm-return/${borrowId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Return confirmation failed");
+
+      setReturnRequests((prev) => prev.filter((b) => b._id !== borrowId));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
 
   async function fetchStats() {
     try {
@@ -36,16 +82,46 @@ export default function AdminDashboard() {
     }
   }
 
+  async function fetchBorrowRequests() {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/admin/borrow-requests`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) return;
+      setBorrowRequests(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch borrow requests", err);
+    }
+  }
+
+  async function fetchReturnRequests() {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/admin/return-requests`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) return;
+      setReturnRequests(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch return requests", err);
+    }
+  }
+
   async function fetchBorrowedBooks() {
     try {
       const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/api/borrows`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) return;
       setBorrowedBooks(await res.json());
@@ -116,15 +192,95 @@ export default function AdminDashboard() {
       </div>
 
       {/* ============================
-          BORROWED BOOKS LIST
-      ============================ */}
+        📥 BORROW REQUESTS
+    ============================ */}
+      <div className="max-w-6xl mx-auto mb-20">
+        <h2 className="text-2xl font-extrabold text-white mb-6 text-center">
+          📥 Borrow Requests
+        </h2>
+
+        {borrowRequests.length === 0 ? (
+          <p className="text-center text-gray-300">
+            No pending borrow requests
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {borrowRequests.map((req) => (
+              <div
+                key={req._id}
+                className="bg-white/95 p-5 rounded-xl shadow border"
+              >
+                <p className="font-bold text-gray-900">📘 {req.book.title}</p>
+
+                <p className="text-sm text-gray-700">
+                  Student: {req.user.name} ({req.user.regNo})
+                </p>
+
+                <p className="text-sm text-gray-600">
+                  Borrow Token: <strong>{req.borrowToken}</strong>
+                </p>
+
+                <button
+                  onClick={() => approveBorrow(req._id)}
+                  className="mt-3 px-4 py-2 rounded bg-emerald-500 text-black font-bold hover:bg-emerald-600"
+                >
+                  Approve Borrow
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ============================
+        📤 RETURN REQUESTS
+    ============================ */}
+      <div className="max-w-6xl mx-auto mb-20">
+        <h2 className="text-2xl font-extrabold text-white mb-6 text-center">
+          📤 Return Requests
+        </h2>
+
+        {returnRequests.length === 0 ? (
+          <p className="text-center text-gray-300">
+            No pending return requests
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {returnRequests.map((req) => (
+              <div
+                key={req._id}
+                className="bg-white/95 p-5 rounded-xl shadow border"
+              >
+                <p className="font-bold text-gray-900">📘 {req.book.title}</p>
+
+                <p className="text-sm text-gray-700">
+                  Student: {req.user.name} ({req.user.regNo})
+                </p>
+
+                <p className="text-sm text-gray-600">
+                  Return Token: <strong>{req.returnToken}</strong>
+                </p>
+
+                <button
+                  onClick={() => confirmReturn(req._id)}
+                  className="mt-3 px-4 py-2 rounded bg-indigo-500 text-white font-bold hover:bg-indigo-600"
+                >
+                  Confirm Return
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ============================
+        📚 BORROWED BOOKS LIST
+    ============================ */}
       <div className="max-w-6xl mx-auto">
-        {/* CENTERED HEADING */}
         <h2 className="text-2xl font-extrabold text-white mb-6 text-center flex justify-center items-center gap-2">
           📚 Borrowed Books List
         </h2>
 
-        {/* CENTERED SEARCH */}
         <div className="flex justify-center mb-6">
           <input
             type="text"
@@ -164,15 +320,14 @@ export default function AdminDashboard() {
                   </p>
 
                   <p className="text-xs text-gray-500">
-                    Borrowed on: {new Date(item.createdAt).toLocaleDateString()}
+                    Borrowed on:{" "}
+                    {item.borrowedAt
+                      ? new Date(item.borrowedAt).toLocaleDateString()
+                      : "—"}
                   </p>
 
-                  <p
-                    className={`text-xs font-bold uppercase tracking-wide ${
-                      item.returnedAt ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    Status: {item.returnedAt ? "Returned" : "Borrowed"}
+                  <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
+                    Status: {item.status.replace("_", " ")}
                   </p>
                 </div>
               );

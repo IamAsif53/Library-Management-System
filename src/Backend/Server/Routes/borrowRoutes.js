@@ -6,12 +6,22 @@ const Book = require("../Models/Books");
 const LibraryCard = require("../Models/LibraryCard");
 const { authMiddleware, isAdmin } = require("../Middleware/authMiddleware");
 
+function generateToken(prefix = "BR") {
+  return (
+    prefix +
+    "-" +
+    Date.now().toString().slice(-6) +
+    "-" +
+    Math.floor(100 + Math.random() * 900)
+  );
+}
+
 /* ============================
    BORROW A BOOK
    ============================ */
 router.post("/:bookId", authMiddleware, async (req, res) => {
   try {
-    // 🔒 BLOCK BORROW IF UNPAID FINE EXISTS (NEW)
+    // 🔒 CHECK UNPAID FINE
     const unpaidFine = await Borrow.exists({
       user: req.user._id,
       fineAmount: { $gt: 0 },
@@ -20,20 +30,28 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
 
     if (unpaidFine) {
       return res.status(403).json({
-        message: "Please clear all fines before borrowing new books",
+        message: "Please clear all fines before requesting a book",
       });
     }
 
-    // 🔒 LIMIT CHECK: max 4 active borrows
-    const activeBorrowsCount = await Borrow.countDocuments({
+    // 🔒 CHECK ACTIVE BORROWS (APPROVED ONLY)
+    const activeBorrows = await Borrow.countDocuments({
       user: req.user._id,
+      status: "borrow_approved",
       returnedAt: null,
     });
 
-    if (activeBorrowsCount >= 4) {
+    if (activeBorrows >= 4) {
       return res.status(403).json({
-        message:
-          "Borrow limit reached. You can borrow up to 4 books at a time.",
+        message: "Borrow limit reached (4 books)",
+      });
+    }
+
+    // 🔐 CHECK APPROVED LIBRARY CARD
+    const card = await LibraryCard.findOne({ user: req.user._id });
+    if (!card || card.cardStatus !== "approved") {
+      return res.status(403).json({
+        message: "Approved library card required",
       });
     }
 
@@ -46,38 +64,40 @@ router.post("/:bookId", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Book not available" });
     }
 
-    // 🔐 CHECK APPROVED LIBRARY CARD
-    const card = await LibraryCard.findOne({ user: req.user._id });
-    if (!card || card.cardStatus !== "approved") {
-      return res.status(403).json({
-        message: "Approved library card required to borrow books",
+    // 🔒 PREVENT DUPLICATE PENDING REQUEST
+    const existingRequest = await Borrow.findOne({
+      user: req.user._id,
+      book: book._id,
+      status: { $in: ["borrow_requested", "borrow_approved"] },
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        message: "You already have a pending or active request for this book",
       });
     }
 
-    // 🔽 UPDATE BOOK AVAILABILITY
-    book.available -= 1;
-    await book.save();
+    // 🎟️ GENERATE BORROW TOKEN
+    const borrowToken = generateToken("BR");
 
-    const borrowedAt = new Date();
-    const dueAt = new Date(borrowedAt);
-    dueAt.setDate(dueAt.getDate() + 30);
-
-    // 📘 CREATE BORROW RECORD
-    await Borrow.create({
+    // 📘 CREATE BORROW REQUEST (NOT BORROW)
+    const borrow = await Borrow.create({
       user: req.user._id,
       book: book._id,
-      borrowedAt,
-      dueAt,
-      fineAmount: 0,
-      finePaid: false,
+      status: "borrow_requested",
+      borrowToken,
     });
 
-    res.json({ message: "Book borrowed successfully" });
+    res.status(201).json({
+      message: "Borrow request sent successfully",
+      token: borrowToken,
+      borrowId: borrow._id,
+      status: borrow.status,
+    });
   } catch (err) {
-    console.error("Borrow error:", err);
+    console.error("Borrow request error:", err);
     res.status(500).json({
-      message: "Borrow failed",
-      error: err.message,
+      message: "Failed to send borrow request",
     });
   }
 });
@@ -230,5 +250,207 @@ router.post("/return/:borrowId", authMiddleware, async (req, res) => {
     });
   }
 });
+
+/* ============================
+   ADMIN: VIEW BORROW REQUESTS
+   ============================ */
+router.get(
+  "/admin/borrow-requests",
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const requests = await Borrow.find({
+        status: "borrow_requested",
+      })
+        .populate("user", "name email regNo")
+        .populate("book", "title author isbn")
+        .sort({ createdAt: 1 });
+
+      res.json(requests);
+    } catch (err) {
+      res.status(500).json({
+        message: "Failed to fetch borrow requests",
+      });
+    }
+  }
+);
+
+/* ============================
+   ADMIN: APPROVE BORROW
+   ============================ */
+router.post(
+  "/admin/approve/:borrowId",
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const borrow = await Borrow.findById(req.params.borrowId).populate(
+        "book"
+      );
+
+      if (!borrow) {
+        return res.status(404).json({
+          message: "Borrow request not found",
+        });
+      }
+
+      if (borrow.status !== "borrow_requested") {
+        return res.status(400).json({
+          message: "This request is not pending approval",
+        });
+      }
+
+      if (borrow.book.available <= 0) {
+        return res.status(400).json({
+          message: "Book is no longer available",
+        });
+      }
+
+      // 📉 DECREASE BOOK AVAILABILITY (ONLY NOW!)
+      borrow.book.available -= 1;
+      await borrow.book.save();
+
+      // 📅 SET BORROW & DUE DATE
+      const borrowedAt = new Date();
+      const dueAt = new Date(borrowedAt);
+      dueAt.setDate(dueAt.getDate() + 30);
+
+      borrow.status = "borrow_approved";
+      borrow.borrowedAt = borrowedAt;
+      borrow.dueAt = dueAt;
+      borrow.approvedAt = new Date();
+
+      await borrow.save();
+
+      res.json({
+        message: "Borrow approved successfully",
+        dueAt,
+      });
+    } catch (err) {
+      console.error("Approve borrow error:", err);
+      res.status(500).json({
+        message: "Failed to approve borrow",
+      });
+    }
+  }
+);
+
+/* ============================
+   USER: REQUEST RETURN
+   ============================ */
+router.post("/request-return/:borrowId", authMiddleware, async (req, res) => {
+  try {
+    const borrow = await Borrow.findById(req.params.borrowId);
+
+    if (!borrow) {
+      return res.status(404).json({
+        message: "Borrow record not found",
+      });
+    }
+
+    if (borrow.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "Unauthorized",
+      });
+    }
+
+    if (borrow.status !== "borrow_approved") {
+      return res.status(400).json({
+        message: "Return request not allowed for this status",
+      });
+    }
+
+    // 🎟️ GENERATE RETURN TOKEN
+    const returnToken = generateToken("RT");
+
+    borrow.status = "return_requested";
+    borrow.returnToken = returnToken;
+
+    await borrow.save();
+
+    res.json({
+      message: "Return request sent successfully",
+      returnToken,
+    });
+  } catch (err) {
+    console.error("Return request error:", err);
+    res.status(500).json({
+      message: "Failed to request return",
+    });
+  }
+});
+
+/* ============================
+   ADMIN: VIEW RETURN REQUESTS
+   ============================ */
+router.get(
+  "/admin/return-requests",
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const requests = await Borrow.find({
+        status: "return_requested",
+      })
+        .populate("user", "name email regNo")
+        .populate("book", "title author isbn")
+        .sort({ updatedAt: 1 });
+
+      res.json(requests);
+    } catch (err) {
+      res.status(500).json({
+        message: "Failed to fetch return requests",
+      });
+    }
+  }
+);
+
+
+/* ============================
+   ADMIN: CONFIRM RETURN
+   ============================ */
+router.post(
+  "/admin/confirm-return/:borrowId",
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const borrow = await Borrow.findById(req.params.borrowId).populate("book");
+
+      if (!borrow) {
+        return res.status(404).json({
+          message: "Borrow record not found",
+        });
+      }
+
+      if (borrow.status !== "return_requested") {
+        return res.status(400).json({
+          message: "This borrow is not pending return confirmation",
+        });
+      }
+
+      // 🔁 INCREASE BOOK AVAILABILITY
+      borrow.book.available += 1;
+      await borrow.book.save();
+
+      borrow.status = "returned";
+      borrow.returnedAt = new Date();
+      borrow.returnApprovedAt = new Date();
+
+      await borrow.save();
+
+      res.json({
+        message: "Book return confirmed successfully",
+      });
+    } catch (err) {
+      console.error("Confirm return error:", err);
+      res.status(500).json({
+        message: "Failed to confirm return",
+      });
+    }
+  }
+);
+
 
 module.exports = router;

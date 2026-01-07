@@ -88,6 +88,38 @@ export default function BookHistory() {
     }
   }
 
+  // ============================
+  // 🔁 REQUEST RETURN (NEW)
+  // ============================
+  async function handleReturnRequest(borrowId) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/borrows/request-return/${borrowId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setHistory((prev) =>
+        prev.map((item) =>
+          item._id === borrowId
+            ? {
+                ...item,
+                status: "return_requested",
+                returnToken: data.returnToken,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
@@ -116,6 +148,40 @@ export default function BookHistory() {
   );
 
   const totalFine = unpaidOverdues.length * 10;
+
+  function getStatusLabel(item) {
+    switch (item.status) {
+      case "borrow_requested":
+        return {
+          text: "Pending Approval",
+          color: "text-yellow-400",
+        };
+
+      case "borrow_approved":
+        return {
+          text: "Borrowed",
+          color: "text-emerald-400",
+        };
+
+      case "return_requested":
+        return {
+          text: "Return Pending",
+          color: "text-orange-400",
+        };
+
+      case "returned":
+        return {
+          text: "Returned",
+          color: "text-green-400",
+        };
+
+      default:
+        return {
+          text: "Unknown",
+          color: "text-gray-400",
+        };
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 py-12 px-6">
@@ -150,8 +216,7 @@ export default function BookHistory() {
                 item.dueAt &&
                 new Date(item.dueAt) < new Date();
 
-              const hasUnpaidFine =
-                item.fineAmount > 0 && !item.finePaid;
+              const hasUnpaidFine = item.fineAmount > 0 && !item.finePaid;
 
               return (
                 <div
@@ -164,50 +229,70 @@ export default function BookHistory() {
                     {item.book.title}
                   </h3>
 
-                  <p className="text-indigo-300">
-                    Author: {item.book.author}
-                  </p>
+                  <p className="text-indigo-300">Author: {item.book.author}</p>
 
                   <p className="text-indigo-300 text-sm">
                     ISBN: {item.book.isbn}
                   </p>
 
-                  <p className="mt-3 text-sm text-gray-400">
-                    Borrowed on:{" "}
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </p>
-
-                  <p className="text-sm text-gray-300">
-                    Due on: {new Date(item.dueAt).toLocaleDateString()}
-                  </p>
-
-                  {isOverdue && (
-                    <p className="mt-2 text-sm font-bold text-red-400">
-                      ⚠️ Overdue
+                  {/* Dates */}
+                  {item.borrowedAt && (
+                    <p className="mt-3 text-sm text-gray-400">
+                      Borrowed on:{" "}
+                      {new Date(item.borrowedAt).toLocaleDateString()}
                     </p>
                   )}
 
-                  {/* ============================
-                      ACTIONS
-                     ============================ */}
-                  {item.returnedAt ? (
-                    <p className="mt-3 text-sm text-green-400 font-semibold">
-                      ✅ Returned
+                  {item.dueAt && (
+                    <p className="text-sm text-gray-300">
+                      Due on: {new Date(item.dueAt).toLocaleDateString()}
                     </p>
-                  ) : hasUnpaidFine ? (
+                  )}
+
+                  {/* Status */}
+                  <p className={`mt-2 font-bold ${status.color}`}>
+                    Status: {status.text}
+                  </p>
+
+                  {/* Tokens */}
+                  {item.status === "borrow_requested" && (
+                    <p className="mt-1 text-sm text-yellow-300">
+                      Borrow Token: <strong>{item.borrowToken}</strong>
+                    </p>
+                  )}
+
+                  {item.status === "return_requested" && (
+                    <p className="mt-1 text-sm text-orange-300">
+                      Return Token: <strong>{item.returnToken}</strong>
+                    </p>
+                  )}
+
+                  {/* Actions */}
+                  {item.status === "borrow_approved" && (
                     <button
-                      onClick={() => handlePayFine(item._id)}
-                      className="mt-4 px-4 py-2 rounded-lg bg-red-500 text-white font-bold hover:bg-red-600"
+                      onClick={() => handleReturnRequest(item._id)}
+                      className="mt-4 px-4 py-2 rounded-lg bg-amber-400 text-black font-bold hover:bg-amber-500"
                     >
-                      Pay Fine (10 TK)
+                      Request Return
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => handleReturn(item._id)}
-                      className="mt-4 px-4 py-2 rounded-lg bg-emerald-400 text-black font-bold hover:bg-emerald-500"
-                    >
-                      Return Book
-                    </button>
+                  )}
+
+                  {item.status === "borrow_requested" && (
+                    <p className="mt-4 text-sm text-yellow-300 italic">
+                      Waiting for admin approval
+                    </p>
+                  )}
+
+                  {item.status === "return_requested" && (
+                    <p className="mt-4 text-sm text-orange-300 italic">
+                      Waiting for return confirmation
+                    </p>
+                  )}
+
+                  {item.status === "returned" && (
+                    <p className="mt-4 text-sm text-green-400 font-semibold">
+                      ✅ Returned successfully
+                    </p>
                   )}
                 </div>
               );
