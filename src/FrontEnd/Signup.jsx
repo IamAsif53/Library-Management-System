@@ -16,6 +16,8 @@ const Signup = ({ setShowSignup }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
 
   function onChange(e) {
     const { name, value } = e.target;
@@ -61,11 +63,11 @@ const Signup = ({ setShowSignup }) => {
 
       console.log("Submitting signup payload:", payload);
 
-const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload),
-});
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       console.log("Raw response from server:", res.status, res.statusText);
 
@@ -169,11 +171,21 @@ const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users`, {
           name="password"
           value={form.password}
           onChange={onChange}
-          type="password"
+          type={showPassword ? "text" : "password"}
           placeholder="Password (min 6 chars)"
           autoComplete="new-password"
           className="w-full px-4 py-2 rounded-xl bg-white/80 focus:bg-white focus:ring-2 ring-green-400 outline-none shadow-md placeholder-gray-500 text-sm"
         />
+        <label className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={() => setShowPassword(!showPassword)}
+            className="accent-green-500"
+          />
+          Show password
+        </label>
+
 
         {/* messages */}
         {error && <div className="text-sm text-red-500 mt-1">{error}</div>}
@@ -184,9 +196,8 @@ const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users`, {
           <button
             type="submit"
             disabled={loading}
-            className={`px-5 py-2 rounded-xl text-white shadow-md transition-all ${
-              loading ? "bg-green-400 cursor-wait" : "bg-green-600 hover:bg-green-700"
-            }`}
+            className={`px-5 py-2 rounded-xl text-white shadow-md transition-all ${loading ? "bg-green-400 cursor-wait" : "bg-green-600 hover:bg-green-700"
+              }`}
           >
             {loading ? "Submitting..." : "Sign up"}
           </button>
